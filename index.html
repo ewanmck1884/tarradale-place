@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>House Sale Calculator</title>
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --card: #ffffff;
+    --text: #1d1f23;
+    --muted: #6b6f76;
+    --line: #e4e2dc;
+    --accent: #1f5f4a;
+    --accent-soft: #e5f0eb;
+    --minus: #a23b2a;
+    --warn-bg: #fff4e0;
+    --warn-text: #7a4b00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171a;
+      --card: #1e2125;
+      --text: #ecebe7;
+      --muted: #9a9ea5;
+      --line: #2f3338;
+      --accent: #6fc3a1;
+      --accent-soft: #1f3330;
+      --minus: #f08a76;
+      --warn-bg: #3a2e14;
+      --warn-text: #f5cf86;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  h2 { font-size: 1.05rem; margin: 0 0 14px; }
+
+  /* Sale price */
+  .sale label { font-weight: 600; display: block; margin-bottom: 8px; }
+  .sale-input {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 2rem; font-weight: 700;
+    border: 2px solid var(--accent); border-radius: 10px;
+    padding: 6px 14px; background: var(--card);
+  }
+  .sale-input span { color: var(--muted); }
+  .sale-input input {
+    border: 0; outline: 0; background: transparent; color: var(--text);
+    font: inherit; width: 100%;
+  }
+  input[type=range] { width: 100%; margin: 16px 0 4px; accent-color: var(--accent); }
+  .range-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: .85rem; }
+
+  /* Results */
+  .results { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .person {
+    background: var(--accent-soft); border-radius: 12px; padding: 16px;
+  }
+  .person .name { color: var(--muted); font-size: .9rem; }
+  .person .amount { font-size: 1.9rem; font-weight: 700; color: var(--accent); }
+  .person .detail { font-size: .85rem; color: var(--muted); }
+  .total-line { margin-top: 14px; color: var(--muted); font-size: .9rem; }
+
+  /* Breakdown table */
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; }
+  td .note { display: block; color: var(--muted); font-size: .82rem; }
+  tr.minus td:last-child { color: var(--minus); }
+  tr.subtotal td { font-weight: 700; border-bottom: 2px solid var(--text); }
+  tr.final td { font-weight: 700; color: var(--accent); border-bottom: 0; }
+
+  /* Inputs */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .field label { display: block; font-size: .88rem; font-weight: 600; margin-bottom: 4px; }
+  .field .hint { font-size: .78rem; color: var(--muted); margin-top: 3px; }
+  .field input[type=number] {
+    width: 100%; padding: 8px 10px; font: inherit;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--text);
+  }
+  .check { display: flex; align-items: center; gap: 8px; font-size: .9rem; margin-top: 4px; }
+  .group-title { grid-column: 1 / -1; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-top: 8px; }
+
+  .warn {
+    background: var(--warn-bg); color: var(--warn-text);
+    border-radius: 10px; padding: 12px 14px; font-size: .9rem; margin-top: 14px;
+  }
+  .hidden { display: none; }
+  footer { color: var(--muted); font-size: .82rem; }
+  button.reset {
+    font: inherit; font-size: .85rem; padding: 6px 12px; margin-top: 14px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); cursor: pointer;
+  }
+
+  @media (max-width: 560px) {
+    .results, .grid { grid-template-columns: 1fr; }
+    .person .amount { font-size: 1.6rem; }
+    .sale-input { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>House Sale Calculator</h1>
+  <p class="sub">Enter a sale price to see what Ewan and Kelsey each walk away with. Every cost is listed below. Nothing is hidden.</p>
+
+  <!-- SALE PRICE -->
+  <section class="card sale">
+    <label for="sale">Sale price</label>
+    <div class="sale-input"><span>£</span><input id="sale" type="number" inputmode="numeric" step="1000" value="240000"></div>
+    <input id="saleRange" type="range" min="200000" max="280000" step="1000" value="240000" aria-label="Sale price slider">
+    <div class="range-labels"><span>£200k</span><span>£240k</span><span>£280k</span></div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="card">
+    <h2>What you each get</h2>
+    <div class="results">
+      <div class="person">
+        <div class="name">Ewan</div>
+        <div class="amount" id="outEwan">£0</div>
+        <div class="detail" id="outEwanDetail"></div>
+      </div>
+      <div class="person">
+        <div class="name">Kelsey</div>
+        <div class="amount" id="outKelsey">£0</div>
+        <div class="detail" id="outKelseyDetail"></div>
+      </div>
+    </div>
+    <div class="total-line" id="outSensitivity"></div>
+    <div class="warn hidden" id="warnShortfall"></div>
+  </section>
+
+  <!-- BREAKDOWN -->
+  <section class="card">
+    <h2>Full breakdown</h2>
+    <table id="breakdown"></table>
+  </section>
+
+  <!-- ASSUMPTIONS -->
+  <section class="card">
+    <h2>Costs and assumptions (edit any of these)</h2>
+    <div class="grid">
+      <div class="group-title">Selling costs</div>
+      <div class="field">
+        <label for="agentPct">Estate agent fee (%)</label>
+        <input id="agentPct" type="number" step="0.05" value="1">
+        <label class="check"><input id="agentVat" type="checkbox"> Add VAT (20%) to agent fee</label>
+      </div>
+      <div class="field">
+        <label for="marketing">Marketing &amp; photography (£)</label>
+        <input id="marketing" type="number" step="10" value="840">
+      </div>
+      <div class="field">
+        <label for="solicitor">Solicitor fee (£)</label>
+        <input id="solicitor" type="number" step="10" value="1600">
+      </div>
+      <div class="field">
+        <label for="otherSelling">Other selling costs (£)</label>
+        <input id="otherSelling" type="number" step="10" value="0">
+        <div class="hint">Anything else, e.g. cleaning or repairs before sale.</div>
+      </div>
+
+      <div class="group-title">Mortgage</div>
+      <div class="field">
+        <label for="mortgage">Mortgage balance at completion (£)</label>
+        <input id="mortgage" type="number" step="100" value="207000">
+        <div class="hint">Estimate. Replace with the figure on Leeds' redemption statement.</div>
+      </div>
+      <div class="field">
+        <label for="ercPct">Early repayment charge (%)</label>
+        <input id="ercPct" type="number" step="0.05" value="1.5">
+        <div class="hint">1.5% from 1 Sep 2026 to 31 Aug 2027, then 0%.</div>
+      </div>
+      <div class="field">
+        <label for="exitFee">Mortgage exit fee (£)</label>
+        <input id="exitFee" type="number" step="1" value="199">
+        <div class="hint">Leeds' admin fee for closing the account.</div>
+      </div>
+
+      <div class="group-title">Deposits (paid back first)</div>
+      <div class="field">
+        <label for="depEwan">Ewan's deposit (£)</label>
+        <input id="depEwan" type="number" step="1" value="3100">
+      </div>
+      <div class="field">
+        <label for="depKelsey">Kelsey's deposit (£)</label>
+        <input id="depKelsey" type="number" step="1" value="8299">
+      </div>
+
+      <div class="group-title">Other deductions (if they apply)</div>
+      <div class="field">
+        <label for="builder">Builder deposit contribution to repay (£)</label>
+        <input id="builder" type="number" step="100" value="0">
+        <div class="hint">Leave at 0 if it was an incentive that isn't repaid.</div>
+      </div>
+      <div class="field">
+        <label for="cgt">Capital Gains Tax, total for both (£)</label>
+        <input id="cgt" type="number" step="100" value="0">
+        <div class="hint">Leave at 0 until the purchase price is confirmed.</div>
+      </div>
+    </div>
+    <button class="reset" id="reset" type="button">Reset to defaults</button>
+  </section>
+
+  <footer>
+    Estimates only, not financial or tax advice. The mortgage balance and early repayment charge will be confirmed by the lender's redemption statement.
+  </footer>
+</main>
+
+<script>
+  const ids = ["sale","agentPct","marketing","solicitor","otherSelling","mortgage","ercPct","exitFee","depEwan","depKelsey","builder","cgt"];
+  const el = id => document.getElementById(id);
+  const defaults = {};
+  ids.forEach(id => defaults[id] = el(id).value);
+  const defaultVat = el("agentVat").checked;
+
+  const gbp = n => {
+    const sign = n < 0 ? "−" : "";
+    return sign + "£" + Math.abs(Math.round(n)).toLocaleString("en-GB");
+  };
+  const num = id => parseFloat(el(id).value) || 0;
+
+  function row(label, value, cls = "", note = "") {
+    const n = note ? `<span class="note">${note}</span>` : "";
+    return `<tr class="${cls}"><td>${label}${n}</td><td>${value}</td></tr>`;
+  }
+
+  function calc() {
+    const sale = num("sale");
+    const vat = el("agentVat").checked;
+    const agentBase = sale * num("agentPct") / 100;
+    const agentFee = vat ? agentBase * 1.2 : agentBase;
+    const marketing = num("marketing");
+    const solicitor = num("solicitor");
+    const otherSelling = num("otherSelling");
+    const sellingCosts = agentFee + marketing + solicitor + otherSelling;
+    const afterSelling = sale - sellingCosts;
+
+    const mortgage = num("mortgage");
+    const erc = mortgage * num("ercPct") / 100;
+    const exitFee = num("exitFee");
+    const redemption = mortgage + erc + exitFee;
+
+    const builder = num("builder");
+    const cgt = num("cgt");
+
+    const equity = afterSelling - redemption - builder - cgt;
+    const depE = num("depEwan");
+    const depK = num("depKelsey");
+    const remainder = equity - depE - depK;
+    const half = remainder / 2;
+    const ewan = depE + half;
+    const kelsey = depK + half;
+
+    // Results
+    el("outEwan").textContent = gbp(ewan);
+    el("outKelsey").textContent = gbp(kelsey);
+    el("outEwanDetail").textContent = `${gbp(depE)} deposit + ${gbp(half)} share`;
+    el("outKelseyDetail").textContent = `${gbp(depK)} deposit + ${gbp(half)} share`;
+
+    const perThousand = (1000 - 1000 * num("agentPct") / 100 * (vat ? 1.2 : 1)) / 2;
+    el("outSensitivity").textContent =
+      `Total equity: ${gbp(equity)}. Every £1,000 more on the sale price adds about ${gbp(perThousand)} to each of you.`;
+
+    const warn = el("warnShortfall");
+    if (remainder < 0) {
+      warn.classList.remove("hidden");
+      warn.textContent = `At this price the equity (${gbp(equity)}) doesn't cover both deposits (${gbp(depE + depK)}). The shortfall of ${gbp(-remainder)} has been split equally, so each of you gets back less than your deposit.`;
+    } else {
+      warn.classList.add("hidden");
+    }
+
+    // Breakdown
+    const agentNote = `${num("agentPct")}% of sale price${vat ? " + 20% VAT" : " (no VAT added)"}`;
+    let html = "";
+    html += row("Sale price", gbp(sale), "subtotal");
+    html += row("Estate agent fee", gbp(-agentFee), "minus", agentNote);
+    html += row("Marketing &amp; photography", gbp(-marketing), "minus");
+    html += row("Solicitor fee", gbp(-solicitor), "minus");
+    if (otherSelling) html += row("Other selling costs", gbp(-otherSelling), "minus");
+    html += row("After selling costs", gbp(afterSelling), "subtotal");
+    html += row("Mortgage balance", gbp(-mortgage), "minus", "Estimated balance at completion");
+    html += row("Early repayment charge", gbp(-erc), "minus", `${num("ercPct")}% of mortgage balance`);
+    html += row("Mortgage exit fee", gbp(-exitFee), "minus", "Lender's account closure fee");
+    if (builder) html += row("Builder contribution repaid", gbp(-builder), "minus");
+    if (cgt) html += row("Capital Gains Tax", gbp(-cgt), "minus");
+    html += row("Equity left", gbp(equity), "subtotal");
+    html += row("Kelsey's deposit back", gbp(-depK), "minus");
+    html += row("Ewan's deposit back", gbp(-depE), "minus");
+    html += row("Remainder split 50/50", gbp(remainder), "subtotal", `${gbp(half)} each`);
+    html += row("Ewan receives", gbp(ewan), "final", `${gbp(depE)} + ${gbp(half)}`);
+    html += row("Kelsey receives", gbp(kelsey), "final", `${gbp(depK)} + ${gbp(half)}`);
+    el("breakdown").innerHTML = html;
+  }
+
+  // Keep sale price box and slider in sync
+  el("sale").addEventListener("input", () => {
+    el("saleRange").value = el("sale").value;
+    calc();
+  });
+  el("saleRange").addEventListener("input", () => {
+    el("sale").value = el("saleRange").value;
+    calc();
+  });
+  ids.filter(id => id !== "sale").forEach(id => el(id).addEventListener("input", calc));
+  el("agentVat").addEventListener("change", calc);
+
+  el("reset").addEventListener("click", () => {
+    ids.forEach(id => el(id).value = defaults[id]);
+    el("saleRange").value = defaults.sale;
+    el("agentVat").checked = defaultVat;
+    calc();
+  });
+
+  calc();
+</script>
+</body>
+</html>
